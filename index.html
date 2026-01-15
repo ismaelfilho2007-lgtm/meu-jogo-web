@@ -3,128 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arcade Studio | Sua Plataforma de Jogos</title>
+    <title>Arcade Studio | Oficial</title>
     <style>
-        :root {
-            --neon-blue: #00f2ff;
-            --neon-pink: #ff00ff;
-        }
-
-        body {
-            margin: 0;
-            background-color: #050505;
-            color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        header {
-            text-align: center;
-            padding: 50px 20px;
-        }
-
-        h1 {
-            font-size: 3rem;
-            text-transform: uppercase;
-            letter-spacing: 5px;
-            margin: 0;
-            color: #fff;
-            text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            width: 90%;
-            max-width: 1000px;
-            padding: 20px;
-        }
-
-        .game-card {
-            background: #111;
-            border: 1px solid #333;
-            border-radius: 15px;
-            overflow: hidden;
-            transition: transform 0.3s, border-color 0.3s;
-            position: relative;
-        }
-
-        .game-card:hover {
-            transform: translateY(-10px);
-            border-color: var(--neon-pink);
-            box-shadow: 0 0 15px rgba(255, 0, 255, 0.3);
-        }
-
-        /* Logo Neon no lugar do emoji */
-        .thumb-neon {
-            height: 150px;
-            background: linear-gradient(45deg, #000, #1a1a1a);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--neon-blue);
-            text-shadow: 0 0 5px var(--neon-blue);
-            border-bottom: 1px solid #222;
-        }
-
-        .info {
-            padding: 20px;
-            text-align: center;
-        }
-
-        .info h3 { margin: 0 0 10px 0; color: #fff; }
-        .info p { color: #888; font-size: 0.9rem; margin-bottom: 20px; }
-
-        .btn-play {
-            display: inline-block;
-            background: transparent;
-            color: var(--neon-blue);
-            border: 2px solid var(--neon-blue);
-            padding: 10px 25px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            text-transform: uppercase;
-            transition: 0.3s;
-        }
-
-        .btn-play:hover {
-            background: var(--neon-blue);
-            color: #000;
-            box-shadow: 0 0 20px var(--neon-blue);
-        }
-
-        .coming-soon {
-            opacity: 0.5;
-            filter: grayscale(1);
-        }
+        body { margin: 0; background: #050505; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        header { padding: 40px; text-align: center; }
+        h1 { font-size: 2.5rem; text-shadow: 0 0 10px #00f2ff; color: #fff; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; width: 90%; max-width: 800px; }
+        .card { background: #111; border: 1px solid #333; padding: 20px; border-radius: 10px; text-align: center; transition: 0.3s; }
+        .card:hover { border-color: #ff00ff; transform: translateY(-5px); }
+        .btn { display: inline-block; margin-top: 15px; padding: 10px 20px; background: #00f2ff; color: #000; text-decoration: none; font-weight: bold; border-radius: 5px; }
+        .btn:hover { background: #fff; box-shadow: 0 0 15px #00f2ff; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>🕹️ Arcade Studio</h1>
-        <p style="color: #666;">Desenvolvido por você</p>
+        <h1>🕹️ ARCADE STUDIO</h1>
+        <p>Seus jogos em um só lugar</p>
     </header>
 
     <div class="grid">
-        <div class="game-card">
-            <div class="thumb-neon">
-                <div style="border: 2px solid var(--neon-blue); padding: 10px;">
-                    NEON VELOCITY
-                </div>
-            </div>
-            <div class="info">
-                <h3>Neon Velocity 3D</h3>
-                <p>Corra por um mundo infinito de luzes e desvie de obstáculos!</p>
-                <a href="./jogo-3d/index.html" class="btn-play">JOGAR AGORA</a>
-            </div>
+        <div class="card">
+            <h2 style="color: #00f2ff;">Neon Velocity 3D</h2>
+            <p>Desvie dos obstáculos em um túnel neon infinito.</p>
+            <a href="./jogo-3d/index.html" class="btn">JOGAR AGORA</a>
         </div>
 
-        <div class="game-card coming-soon">
-            <div class
+        <div class="card" style="opacity: 0.4;">
+            <h2>Em Breve</h2>
+            <p>Novo projeto em desenvolvimento...</p>
+            <span style="border: 1px solid #444; padding: 5px 10px; font-size: 0.8rem;">BLOQUEADO</span>
+        </div>
+    </div>
+
+    <script>
+        // Isso ajuda a limpar erros de links antigos salvos no navegador
+        console.log("Arcade Studio carregado com sucesso.");
+    </script>
+</body>
+</html>
