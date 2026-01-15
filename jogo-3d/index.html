@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Velocity 3D - Arcade Studio</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+        canvas { display: block; }
+        
+        /* Interface de usuário por cima do jogo */
+        .ui-overlay {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 40px;
+            box-sizing: border-box;
+            color: #0ff;
+            pointer-events: none;
+        }
+        .btn-back {
+            pointer-events: auto;
+            background: #ff0000;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ui-overlay">
+        <a href="../index.html" class="btn-back">⬅ VOLTAR</a>
+        <div>PONTOS: <span id="score">0</span></div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // Configuração Básica
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Criando o "Jogador" (Cubo Neon)
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const material = new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true });
+        const player = new THREE.Mesh(geometry, material);
+        scene.add(player);
+
+        // Criando o Chão (Grade Infinita)
+        const grid = new THREE.GridHelper(100, 50, 0xff00ff, 0x444444);
+        grid.position.y = -1;
+        scene.add(grid);
+
+        camera.position.z = 5;
+        camera.position.y = 2;
+        camera.lookAt(player.position);
+
+        // Controles
+        let moveLeft = false;
+        let moveRight = false;
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "ArrowLeft") moveLeft = true;
+            if (e.key === "ArrowRight") moveRight = true;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === "ArrowLeft") moveLeft = false;
+            if (e.key === "ArrowRight") moveRight = false;
+        });
+
+        // Loop de Animação
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Movimentação do Jogador
+            if (moveLeft && player.position.x > -5) player.position.x -= 0.1;
+            if (moveRight && player.position.x < 5) player.position.x += 0.1;
+
+            // Simulação de movimento infinito (movendo a grade)
+            grid.position.z += 0.2;
+            if (grid.position.z > 2) grid.position.z = 0;
+
+            // Rotação suave do cubo
+            player.rotation.y += 0.01;
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
