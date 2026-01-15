@@ -1,0 +1,65 @@
+/* 1. Reset básico para o jogo ocupar a tela toda */
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden; /* Impede barras de rolagem */
+    background-color: #000; /* Fundo preto enquanto o Three.js carrega */
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* 2. O Canvas do Three.js */
+canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* 3. Camada de Interface (UI) por cima do 3D */
+.ui-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box;
+    pointer-events: none; /* Permite clicar no jogo através da div */
+    z-index: 10;
+}
+
+/* 4. Botão de Voltar */
+.btn-back {
+    pointer-events: auto; /* Reativa o clique apenas no botão */
+    background: rgba(255, 0, 0, 0.8);
+    color: white;
+    text-decoration: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: 0.3s;
+    border: 2px solid transparent;
+}
+
+.btn-back:hover {
+    background: #ff0000;
+    border-color: white;
+    transform: scale(1.05);
+}
+
+/* 5. Painel de Pontuação */
+#score-container {
+    color: #0ff; /* Cor Ciano Neon */
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px 20px;
+    border-radius: 50px;
+    border: 1px solid #0ff;
+}
