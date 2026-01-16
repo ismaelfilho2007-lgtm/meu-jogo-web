@@ -28,15 +28,23 @@
     </div>
 
     <script>
-        const init = () => {
+        // Inicialização Garantida
+        window.onload = function() {
+            if (typeof THREE === 'undefined') return;
+
             const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000);
+
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ antialias: false });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            scene.add(new THREE.AmbientLight(0xffffff, 1));
+            // Luzes
+            const ambient = new THREE.AmbientLight(0xffffff, 1);
+            scene.add(ambient);
 
+            // Player (Cubo Ciano)
             const blockSize = 0.5;
             const player = new THREE.Mesh(
                 new THREE.BoxGeometry(blockSize, blockSize, blockSize),
@@ -44,62 +52,78 @@
             );
             scene.add(player);
 
-            // Chão tipo "Ponte" (limitado lateralmente)
-            const grid = new THREE.GridHelper(100, 20, 0xff00ff, 0x222222);
+            // Pista (Ponte Estreita)
+            const grid = new THREE.GridHelper(10, 20, 0xff00ff, 0x444444);
             grid.position.y = -0.25;
             scene.add(grid);
 
             camera.position.set(0, 3, 7);
             camera.lookAt(0, 1, 0);
 
+            // Variáveis de Estado
             let score = 0, speed = 0.25, isGameOver = false;
             let velocityY = 0, isJumping = false, isFalling = false;
             const walls = [];
             const particles = [];
-            const fragments = [];
 
-            function createGiantBlockWall() {
-                if(isGameOver) return;
+            // Criar Paredes de Blocos
+            function createWall() {
+                if (isGameOver) return;
                 const wallGroup = new THREE.Group();
-                const cols = 11; 
-                const rows = 6;  
+                const cols = 9; 
+                const rows = 5; 
                 const holes = [];
-                while(holes.length < 8) {
+                
+                while(holes.length < 6) {
                     const h = { c: Math.floor(Math.random()*cols), r: Math.floor(Math.random()*rows) };
                     if(!holes.find(ex => ex.c === h.c && ex.r === h.r)) holes.push(h);
                 }
+
                 for(let c = 0; c < cols; c++) {
                     for(let r = 0; r < rows; r++) {
                         if(holes.find(h => h.c === c && h.r === r)) continue;
                         const block = new THREE.Mesh(
                             new THREE.BoxGeometry(blockSize, blockSize, blockSize),
-                            new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.8 })
+                            new THREE.MeshBasicMaterial({ color: 0xff0000 })
                         );
-                        block.position.set((c - 5) * blockSize, r * blockSize, 0);
+                        block.position.set((c - 4) * blockSize, r * blockSize, 0);
                         wallGroup.add(block);
                     }
                 }
-                wallGroup.position.z = -50;
+                wallGroup.position.z = -40;
                 scene.add(wallGroup);
                 walls.push(wallGroup);
             }
-            setInterval(createGiantBlockWall, 2000);
+            setInterval(createWall, 2500);
 
-            let moveLeft = false, moveRight = false;
-            window.onkeydown = e => {
-                if(e.key === "ArrowLeft") moveLeft = true;
-                if(e.key === "ArrowRight") moveRight = true;
+            // Controles
+            const keys = {};
+            window.onkeydown = (e) => { 
+                keys[e.key] = true;
                 if((e.key === "ArrowUp" || e.code === "Space") && !isJumping && !isFalling) {
                     velocityY = 0.22; isJumping = true;
                 }
             };
-            window.onkeyup = e => {
-                if(e.key === "ArrowLeft") moveLeft = false;
-                if(e.key === "ArrowRight") moveRight = false;
-            };
+            window.onkeyup = (e) => keys[e.key] = false;
 
             function triggerGameOver(msg) {
                 isGameOver = true;
                 document.getElementById('death-msg').innerText = msg;
                 document.getElementById('final-score').innerText = score;
                 document.getElementById('game-over').style.display = 'block';
+            }
+
+            function animate() {
+                if (isGameOver && !isFalling) return;
+                requestAnimationFrame(animate);
+
+                // Movimento e Queda no Vácuo
+                if (!isGameOver) {
+                    if (keys["ArrowLeft"]) player.position.x -= 0.12;
+                    if (keys["ArrowRight"]) player.position.x += 0.12;
+
+                    // Se sair da largura da pista (aprox 2.5), cai
+                    if (Math.abs(player.position.x) > 2.5 && !isJumping) {
+                        isFalling = true;
+                    }
+                }
