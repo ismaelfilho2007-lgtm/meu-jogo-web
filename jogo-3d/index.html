@@ -4,127 +4,129 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Velocity 3D</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
-        canvas { display: block; width: 100vw; height: 100vh; }
-        
-        .ui-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; padding: 20px;
-            display: flex; justify-content: space-between; align-items: center;
-            box-sizing: border-box; pointer-events: none; z-index: 10;
-        }
-
-        .btn-back {
-            pointer-events: auto; background: #ff0000; color: white;
-            text-decoration: none; padding: 10px 20px; border-radius: 5px; 
-            font-weight: bold; transition: 0.3s;
-        }
-
-        #score-container {
-            color: #0ff; font-size: 24px; font-weight: bold;
-            background: rgba(0, 0, 0, 0.5); padding: 10px 20px; 
-            border-radius: 50px; border: 1px solid #0ff;
-        }
-
-        #game-over-screen {
-            display: none; position: absolute; top: 50%; left: 50%; 
-            transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); 
-            padding: 40px; border: 3px solid #ff0000; text-align: center; 
-            color: white; z-index: 100; border-radius: 15px;
-        }
-
-        .btn-restart {
-            background: #ff0000; color: white; border: none; padding: 15px 30px; 
-            font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 5px; margin-top: 20px;
-        }
+        body { margin: 0; background: #001122; overflow: hidden; font-family: sans-serif; }
+        canvas { display: block; }
+        .ui { position: absolute; top: 0; left: 0; width: 100%; padding: 20px; display: flex; justify-content: space-between; box-sizing: border-box; z-index: 10; color: #0ff; pointer-events: none; }
+        .btn-back { pointer-events: auto; background: #ff0000; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; }
+        #game-over { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 40px; border: 2px solid #ff0000; text-align: center; color: white; z-index: 100; border-radius: 10px; }
+        button { background: #ff0000; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; font-weight: bold; margin-top: 15px; }
     </style>
 </head>
 <body>
 
-    <div class="ui-overlay">
+    <div class="ui">
         <a href="../index.html" class="btn-back">⬅ VOLTAR</a>
-        <div id="score-container">PONTOS: <span id="score">0</span></div>
+        <div style="font-size: 24px; font-weight: bold;">PONTOS: <span id="score">0</span></div>
     </div>
 
-    <div id="game-over-screen">
-        <h1 style="color: #ff0000; margin: 0;">FIM DE JOGO</h1>
-        <p>Pontuação Final: <span id="final-score">0</span></p>
-        <button class="btn-restart" onclick="location.reload()">TENTAR NOVAMENTE</button>
+    <div id="game-over">
+        <h1>FIM DE JOGO</h1>
+        <p>Pontos: <span id="final-score">0</span></p>
+        <button onclick="location.reload()">REINICIAR</button>
     </div>
 
-    <script type="module">
-        import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+    <script>
+        // Forçar execução imediata
+        const init = () => {
+            const scene = new THREE.Scene();
+            // Mudando o fundo para azul escuro para confirmar que o renderizador abriu
+            scene.background = new THREE.Color(0x001122); 
 
-        // 1. Inicialização Forçada
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x000000); // Força o fundo preto
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: false }); // Antialias desligado para máxima compatibilidade
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        document.body.appendChild(renderer.domElement);
+            // Luz básica (Ambiental não depende de posição)
+            const light = new THREE.AmbientLight(0xffffff, 1); 
+            scene.add(light);
 
-        // 2. Luzes (Simples para garantir performance)
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-        dirLight.position.set(0, 5, 5);
-        scene.add(dirLight);
+            // Player (Usando MeshBasicMaterial que NÃO precisa de luz para aparecer)
+            const playerGeo = new THREE.BoxGeometry(1, 1, 1);
+            const playerMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true });
+            const player = new THREE.Mesh(playerGeo, playerMat);
+            scene.add(player);
 
-        // 3. Jogador
-        const player = new THREE.Mesh(
-            new THREE.BoxGeometry(1, 1, 1),
-            new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00ffff, wireframe: true })
-        );
-        scene.add(player);
+            // Grade (Chão)
+            const grid = new THREE.GridHelper(200, 40, 0xff00ff, 0x444444);
+            grid.position.y = -1;
+            scene.add(grid);
 
-        // 4. Chão
-        const grid = new THREE.GridHelper(200, 40, 0xff00ff, 0x444444);
-        grid.position.y = -1;
-        scene.add(grid);
+            camera.position.set(0, 2, 5);
+            camera.lookAt(0, 0, 0);
 
-        camera.position.set(0, 2, 5);
-        camera.lookAt(player.position);
+            let score = 0;
+            let speed = 0.2;
+            let isGameOver = false;
+            const obstacles = [];
 
-        let moveLeft = false, moveRight = false, isGameOver = false, score = 0;
-        let gameSpeed = 0.25;
-        const obstacles = [];
+            function spawn() {
+                if(isGameOver) return;
+                const obs = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.8, 0.8, 0.8),
+                    new THREE.MeshBasicMaterial({ color: 0xff0000 })
+                );
+                obs.position.set((Math.random() - 0.5) * 10, 0, -30);
+                scene.add(obs);
+                obstacles.push(obs);
+            }
+            setInterval(spawn, 1500);
 
-        function createObstacle() {
-            if (isGameOver) return;
-            const obs = new THREE.Mesh(
-                new THREE.BoxGeometry(0.8, 0.8, 0.8),
-                new THREE.MeshStandardMaterial({ color: 0xff0000 })
-            );
-            obs.position.z = -40;
-            obs.position.x = (Math.random() - 0.5) * 10;
-            scene.add(obs);
-            obstacles.push(obs);
+            let moveLeft = false, moveRight = false;
+            window.addEventListener('keydown', e => {
+                if(e.key === "ArrowLeft") moveLeft = true;
+                if(e.key === "ArrowRight") moveRight = true;
+            });
+            window.addEventListener('keyup', e => {
+                if(e.key === "ArrowLeft") moveLeft = false;
+                if(e.key === "ArrowRight") moveRight = false;
+            });
+
+            function update() {
+                if(isGameOver) return;
+                requestAnimationFrame(update);
+
+                if(moveLeft && player.position.x > -5) player.position.x -= 0.15;
+                if(moveRight && player.position.x < 5) player.position.x += 0.15;
+
+                grid.position.z += speed;
+                if(grid.position.z > 5) grid.position.z = 0;
+
+                for(let i = obstacles.length - 1; i >= 0; i--) {
+                    const o = obstacles[i];
+                    o.position.z += speed;
+
+                    // Colisão simples
+                    if(Math.abs(o.position.z - player.position.z) < 0.8 && 
+                       Math.abs(o.position.x - player.position.x) < 0.8) {
+                        isGameOver = true;
+                        document.getElementById('final-score').innerText = score;
+                        document.getElementById('game-over').style.display = 'block';
+                    }
+
+                    if(o.position.z > 5) {
+                        scene.remove(o);
+                        obstacles.splice(i, 1);
+                        score += 10;
+                        document.getElementById('score').innerText = score;
+                    }
+                }
+                renderer.render(scene, camera);
+            }
+            update();
+        };
+
+        // Tentar rodar o init
+        if (window.THREE) {
+            init();
+        } else {
+            // Se falhar, tenta de novo em 1 segundo
+            setTimeout(() => location.reload(), 1000);
         }
-        setInterval(createObstacle, 1500);
 
-        // Controles
-        window.addEventListener('keydown', (e) => {
-            if (e.key === "ArrowLeft") moveLeft = true;
-            if (e.key === "ArrowRight") moveRight = true;
-        });
-        window.addEventListener('keyup', (e) => {
-            if (e.key === "ArrowLeft") moveLeft = false;
-            if (e.key === "ArrowRight") moveRight = false;
-        });
-
-        function animate() {
-            if (isGameOver) return;
-            requestAnimationFrame(animate);
-
-            if (moveLeft && player.position.x > -5) player.position.x -= 0.15;
-            if (moveRight && player.position.x < 5) player.position.x += 0.15;
-
-            grid.position.z += gameSpeed;
-            if (grid.position.z > 5) grid.position.z = 0;
-
-            obstacles.forEach((obs, index) => {
-                obs.position.z += gameSpeed;
-                if (Math.abs(obs.position.z - player.position.z) < 0.8 && 
-                    Math.abs(obs.
+        window.addEventListener('resize', () => location.reload()); // Simplificado para evitar erros de câmera
+    </script>
+</body>
+</html>
