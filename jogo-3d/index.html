@@ -3,30 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon Velocity - Void Bridge</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <title>Neon Void</title>
+    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <style>
-        body { margin: 0; background: #00050a; overflow: hidden; font-family: sans-serif; display: flex; justify-content: center; align-items: center; }
-        canvas { position: absolute; top: 0; left: 0; z-index: 1; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        canvas { display: block; position: fixed; top: 0; left: 0; }
         
-        #start-screen { position: relative; z-index: 100; text-align: center; color: #0ff; }
-        .btn-start { background: #0ff; color: #000; border: none; padding: 20px 40px; font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 10px; box-shadow: 0 0 20px #0ff; transition: 0.3s; }
-        .btn-start:hover { transform: scale(1.1); background: #fff; }
+        #menu { 
+            position: absolute; width: 100%; height: 100%; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(0, 5, 10, 0.8); z-index: 100; color: #0ff;
+        }
         
-        .ui { position: absolute; top: 0; left: 0; width: 100%; padding: 20px; display: none; justify-content: space-between; box-sizing: border-box; z-index: 10; color: #0ff; pointer-events: none; }
-        .btn-back { pointer-events: auto; background: red; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; }
-        #game-over { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 40px; border: 2px solid red; text-align: center; color: white; z-index: 100; border-radius: 15px; }
-        .restart-btn { background: red; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; margin-top: 15px; font-weight: bold; }
+        .btn { 
+            background: #0ff; color: #000; border: none; padding: 15px 30px; 
+            font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 5px;
+            box-shadow: 0 0 15px #0ff; pointer-events: auto;
+        }
+
+        .ui-hud { 
+            position: absolute; top: 20px; width: 100%; display: none; 
+            justify-content: space-between; padding: 0 20px; box-sizing: border-box; 
+            z-index: 50; color: #0ff; font-weight: bold; pointer-events: none;
+        }
+
+        #game-over { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9); border: 2px solid red; padding: 30px;
+            display: none; text-align: center; color: white; z-index: 200; border-radius: 10px;
+        }
     </style>
 </head>
 <body>
 
-    <div id="start-screen">
-        <h1 style="font-size: 40px; text-shadow: 0 0 15px #0ff;">NEON VOID</h1>
-        <p>Use as setas para mover e Espaço para pular</p>
-        <button class="btn-start" onclick="startGame()">INICIAR DESAFIO</button>
+    <div id="menu">
+        <h1 style="text-shadow: 0 0 10px #0ff;">NEON VOID</h1>
+        <p>Setas: Mover | Espaço: Pular</p>
+        <button class="btn" id="start-btn">JOGAR AGORA</button>
     </div>
 
-    <div class="ui" id="game-ui">
-        <a href="../index.html" class="btn-back">⬅ VOLTAR</a>
-        <div style="font-size: 24px; font-weight: bold;">P
+    <div class="ui-hud" id="hud">
+        <div style="background:
