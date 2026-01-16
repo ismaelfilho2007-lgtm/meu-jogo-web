@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon Velocity 3D</title>
+    <title>Neon Velocity 3D - Wall Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
@@ -22,7 +22,7 @@
     </div>
 
     <div id="game-over">
-        <h1>FIM DE JOGO</h1>
+        <h1>BATEU NA PAREDE!</h1>
         <p>Pontos: <span id="final-score">0</span></p>
         <button onclick="location.reload()">REINICIAR</button>
     </div>
@@ -37,56 +37,73 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            const light = new THREE.AmbientLight(0xffffff, 1); 
-            scene.add(light);
+            scene.add(new THREE.AmbientLight(0xffffff, 1));
 
-            // Player
-            const playerGeo = new THREE.BoxGeometry(1, 1, 1);
+            // 1. Player Reduzido (Tamanho 0.5)
+            const playerGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
             const playerMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true });
             const player = new THREE.Mesh(playerGeo, playerMat);
             scene.add(player);
 
-            // Grade
-            const grid = new THREE.GridHelper(200, 40, 0xff00ff, 0x444444);
-            grid.position.y = -1;
+            // 2. Limites Laterais (Corredor)
+            const railGeo = new THREE.BoxGeometry(0.1, 0.5, 100);
+            const railMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+            const leftRail = new THREE.Mesh(railGeo, railMat);
+            leftRail.position.set(-3.5, -0.75, -40);
+            scene.add(leftRail);
+            const rightRail = leftRail.clone();
+            rightRail.position.x = 3.5;
+            scene.add(rightRail);
+
+            const grid = new THREE.GridHelper(200, 40, 0xff00ff, 0x222222);
+            grid.position.y = -0.3;
             scene.add(grid);
 
             camera.position.set(0, 2, 5);
             camera.lookAt(0, 0, 0);
 
-            let score = 0, speed = 0.2, isGameOver = false;
-            const obstacles = [];
-            const particles = []; // Array para a fumaça
+            // Variáveis de Física e Jogo
+            let score = 0, speed = 0.3, isGameOver = false;
+            let velocityY = 0, isJumping = false;
+            const gravity = -0.015;
+            const walls = [];
+            const particles = [];
 
-            // Função para criar fumaça
-            function createSmoke() {
+            // 3. Mecânica de Paredes com Buracos
+            function createWall() {
                 if(isGameOver) return;
-                const smokeGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-                const smokeMat = new THREE.MeshBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.6 });
-                const smoke = new THREE.Mesh(smokeGeo, smokeMat);
+                const wallGroup = new THREE.Group();
+                const holePos = Math.floor(Math.random() * 3) - 1; // -1 (esquerda), 0 (meio), 1 (direita)
                 
-                // Nasce atrás do player
-                smoke.position.set(player.position.x, player.position.y - 0.2, player.position.z + 0.5);
-                scene.add(smoke);
-                particles.push(smoke);
+                // Criamos 3 partes da parede, deixando uma vazia conforme o holePos
+                for(let i = -1; i <= 1; i++) {
+                    if(i === holePos) continue; // Pula a criação onde será o buraco
+                    
+                    const part = new THREE.Mesh(
+                        new THREE.BoxGeometry(2.3, 4, 0.5),
+                        new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.8 })
+                    );
+                    part.position.x = i * 2.3;
+                    part.position.y = 1.5;
+                    wallGroup.add(part);
+                }
+                
+                wallGroup.position.z = -50;
+                wallGroup.holeX = holePos * 2.3; // Guarda a posição do buraco para conferir pontos
+                scene.add(wallGroup);
+                walls.push(wallGroup);
             }
+            setInterval(createWall, 2000);
 
-            function spawn() {
-                if(isGameOver) return;
-                const obs = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.8, 0.8, 0.8),
-                    new THREE.MeshBasicMaterial({ color: 0xff0000 })
-                );
-                obs.position.set((Math.random() - 0.5) * 10, 0, -30);
-                scene.add(obs);
-                obstacles.push(obs);
-            }
-            setInterval(spawn, 1500);
-
+            // Controles
             let moveLeft = false, moveRight = false;
             window.addEventListener('keydown', e => {
                 if(e.key === "ArrowLeft") moveLeft = true;
                 if(e.key === "ArrowRight") moveRight = true;
+                if((e.key === "ArrowUp" || e.code === "Space") && !isJumping) {
+                    velocityY = 0.3;
+                    isJumping = true;
+                }
             });
             window.addEventListener('keyup', e => {
                 if(e.key === "ArrowLeft") moveLeft = false;
@@ -97,43 +114,59 @@
                 if(isGameOver) return;
                 requestAnimationFrame(update);
 
-                if(moveLeft && player.position.x > -5) player.position.x -= 0.15;
-                if(moveRight && player.position.x < 5) player.position.x += 0.15;
+                // Movimento Horizontal
+                if (moveLeft && player.position.x > -3) player.position.x -= 0.15;
+                if (moveRight && player.position.x < 3) player.position.x += 0.15;
 
-                // Gerar fumaça constantemente
-                if(Math.random() > 0.5) createSmoke();
+                // Física do Pulo
+                player.position.y += velocityY;
+                if (isJumping) {
+                    velocityY += gravity;
+                    if (player.position.y <= 0) {
+                        player.position.y = 0;
+                        isJumping = false;
+                        velocityY = 0;
+                    }
+                }
+
+                // Rastro de Fumaça
+                if(Math.random() > 0.4) {
+                    const smoke = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), new THREE.MeshBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.5 }));
+                    smoke.position.set(player.position.x, player.position.y, player.position.z + 0.3);
+                    scene.add(smoke);
+                    particles.push(smoke);
+                }
+
+                for(let i = particles.length-1; i>=0; i--) {
+                    particles[i].position.z += speed;
+                    particles[i].scale.multiplyScalar(0.95);
+                    if(particles[i].scale.x < 0.05) { scene.remove(particles[i]); particles.splice(i,1); }
+                }
 
                 grid.position.z += speed;
                 if(grid.position.z > 5) grid.position.z = 0;
 
-                // Animar Fumaça
-                for(let i = particles.length - 1; i >= 0; i--) {
-                    const p = particles[i];
-                    p.position.z += speed * 0.5; // Fumaça fica para trás
-                    p.scale.multiplyScalar(0.95); // Diminui de tamanho
-                    p.material.opacity -= 0.02;   // Fica transparente
-                    
-                    if(p.scale.x < 0.01) {
-                        scene.remove(p);
-                        particles.splice(i, 1);
-                    }
-                }
+                // Lógica das Paredes
+                for(let i = walls.length - 1; i >= 0; i--) {
+                    const w = walls[i];
+                    w.position.z += speed;
 
-                // Obstáculos
-                for(let i = obstacles.length - 1; i >= 0; i--) {
-                    const o = obstacles[i];
-                    o.position.z += speed;
-                    if(Math.abs(o.position.z - player.position.z) < 0.8 && Math.abs(o.position.x - player.position.x) < 0.8) {
-                        isGameOver = true;
-                        document.getElementById('final-score').innerText = score;
-                        document.getElementById('game-over').style.display = 'block';
+                    // Detecção de Colisão complexa (se não estiver no buraco)
+                    if(Math.abs(w.position.z - player.position.z) < 0.5) {
+                        const inHole = Math.abs(player.position.x - w.holeX) < 0.8;
+                        if (!inHole) {
+                            isGameOver = true;
+                            document.getElementById('final-score').innerText = score;
+                            document.getElementById('game-over').style.display = 'block';
+                        }
                     }
-                    if(o.position.z > 5) {
-                        scene.remove(o);
-                        obstacles.splice(i, 1);
-                        score += 10;
+
+                    if(w.position.z > 5) {
+                        scene.remove(w);
+                        walls.splice(i, 1);
+                        score += 50;
                         document.getElementById('score').innerText = score;
-                        if(score % 100 === 0) speed += 0.05;
+                        speed += 0.005;
                     }
                 }
                 renderer.render(scene, camera);
@@ -143,7 +176,6 @@
 
         if (window.THREE) init();
         else setTimeout(() => location.reload(), 1000);
-        window.addEventListener('resize', () => location.reload());
     </script>
 </body>
 </html>
