@@ -3,182 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon Void 3D</title>
+    <title>Neon Velocity - Void Bridge</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body { margin: 0; background: #00050a; overflow: hidden; font-family: sans-serif; display: flex; justify-content: center; align-items: center; }
         canvas { position: absolute; top: 0; left: 0; z-index: 1; }
         
         #start-screen { position: relative; z-index: 100; text-align: center; color: #0ff; }
-        .btn-start { background: #0ff; color: #000; border: none; padding: 20px 40px; font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 10px; box-shadow: 0 0 20px #0ff; }
+        .btn-start { background: #0ff; color: #000; border: none; padding: 20px 40px; font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 10px; box-shadow: 0 0 20px #0ff; transition: 0.3s; }
+        .btn-start:hover { transform: scale(1.1); background: #fff; }
         
         .ui { position: absolute; top: 0; left: 0; width: 100%; padding: 20px; display: none; justify-content: space-between; box-sizing: border-box; z-index: 10; color: #0ff; pointer-events: none; }
         .btn-back { pointer-events: auto; background: red; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; }
         #game-over { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 40px; border: 2px solid red; text-align: center; color: white; z-index: 100; border-radius: 15px; }
+        .restart-btn { background: red; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; margin-top: 15px; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="start-screen">
-        <h1 style="margin-bottom: 30px;">NEON VELOCITY</h1>
-        <button class="btn-start" onclick="startGame()">CLIQUE PARA INICIAR</button>
+        <h1 style="font-size: 40px; text-shadow: 0 0 15px #0ff;">NEON VOID</h1>
+        <p>Use as setas para mover e Espaço para pular</p>
+        <button class="btn-start" onclick="startGame()">INICIAR DESAFIO</button>
     </div>
 
     <div class="ui" id="game-ui">
         <a href="../index.html" class="btn-back">⬅ VOLTAR</a>
-        <div style="font-size: 24px; font-weight: bold;">PONTOS: <span id="score">0</span></div>
-    </div>
-
-    <div id="game-over">
-        <h1 id="death-msg">FIM DE JOGO</h1>
-        <p>Pontos: <span id="final-score">0</span></p>
-        <button style="background:red; color:white; padding:10px; border:none; cursor:pointer;" onclick="location.reload()">REINICIAR</button>
-    </div>
-
-    <script>
-        let scene, camera, renderer, player, grid;
-        let score = 0, speed = 0.2, isGameOver = false;
-        let velocityY = 0, isJumping = false, isFalling = false;
-        const walls = [], keys = {};
-
-        function startGame() {
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('game-ui').style.display = 'flex';
-            init();
-        }
-
-        function init() {
-            try {
-                scene = new THREE.Scene();
-                scene.background = new THREE.Color(0x00050a);
-
-                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                
-                // Forçando o uso de Alpha e preservação de buffer para evitar tela preta
-                renderer = new THREE.WebGLRenderer({ 
-                    antialias: false, 
-                    alpha: true,
-                    preserveDrawingBuffer: true 
-                });
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                document.body.appendChild(renderer.domElement);
-
-                scene.add(new THREE.AmbientLight(0xffffff, 1));
-
-                // Player
-                player = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.5, 0.5, 0.5),
-                    new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true })
-                );
-                scene.add(player);
-
-                // Pista
-                grid = new THREE.GridHelper(10, 20, 0xff00ff, 0x444444);
-                grid.position.y = -0.25;
-                scene.add(grid);
-
-                camera.position.set(0, 3, 7);
-                camera.lookAt(0, 1, 0);
-
-                // Obstáculos
-                setInterval(createWall, 2500);
-
-                // Controles
-                window.onkeydown = (e) => { 
-                    keys[e.key] = true;
-                    if((e.key === "ArrowUp" || e.code === "Space") && !isJumping && !isFalling) {
-                        velocityY = 0.22; isJumping = true;
-                    }
-                };
-                window.onkeyup = (e) => keys[e.key] = false;
-
-                animate();
-            } catch (e) {
-                alert("Erro ao iniciar 3D: " + e.message);
-            }
-        }
-
-        function createWall() {
-            if (isGameOver) return;
-            const wallGroup = new THREE.Group();
-            const holes = [];
-            while(holes.length < 3) {
-                let rand = Math.floor(Math.random() * 15);
-                if(!holes.includes(rand)) holes.push(rand);
-            }
-
-            let index = 0;
-            for(let r = 0; r < 3; r++) {
-                for(let c = 0; c < 5; c++) {
-                    if(!holes.includes(index)) {
-                        const block = new THREE.Mesh(
-                            new THREE.BoxGeometry(0.48, 0.48, 0.48),
-                            new THREE.MeshBasicMaterial({ color: 0xff0000 })
-                        );
-                        block.position.set((c - 2) * 0.5, r * 0.5, 0);
-                        wallGroup.add(block);
-                    }
-                    index++;
-                }
-            }
-            wallGroup.position.z = -40;
-            scene.add(wallGroup);
-            walls.push(wallGroup);
-        }
-
-        function animate() {
-            if (!isGameOver) {
-                requestAnimationFrame(animate);
-
-                if(keys["ArrowLeft"]) player.position.x -= 0.12;
-                if(keys["ArrowRight"]) player.position.x += 0.12;
-
-                if (Math.abs(player.position.x) > 2.5 && !isJumping) isFalling = true;
-
-                if (isJumping || isFalling) {
-                    player.position.y += velocityY;
-                    velocityY -= 0.015;
-                    if (!isFalling && player.position.y <= 0) {
-                        player.position.y = 0; isJumping = false; velocityY = 0;
-                    }
-                }
-
-                if (player.position.y < -5) {
-                    isGameOver = true;
-                    showGameOver("VOCÊ CAIU!");
-                }
-
-                grid.position.z += speed;
-                if (grid.position.z > 5) grid.position.z = 0;
-
-                for(let i = walls.length - 1; i >= 0; i--) {
-                    walls[i].position.z += speed;
-                    if (Math.abs(walls[i].position.z - player.position.z) < 0.3) {
-                        walls[i].children.forEach(b => {
-                            const bX = walls[i].position.x + b.position.x;
-                            const bY = walls[i].position.y + b.position.y;
-                            if (Math.abs(player.position.x - bX) < 0.35 && Math.abs(player.position.y - bY) < 0.35) {
-                                isGameOver = true;
-                                showGameOver("COLISÃO!");
-                            }
-                        });
-                    }
-                    if (walls[i].position.z > 10) {
-                        scene.remove(walls[i]);
-                        walls.splice(i, 1);
-                        score += 100;
-                        document.getElementById('score').innerText = score;
-                    }
-                }
-                renderer.render(scene, camera);
-            }
-        }
-
-        function showGameOver(msg) {
-            document.getElementById('death-msg').innerText = msg;
-            document.getElementById('final-score').innerText = score;
-            document.getElementById('game-over').style.display = 'block';
-        }
-    </script>
-</body>
-</html>
+        <div style="font-size: 24px; font-weight: bold;">P
