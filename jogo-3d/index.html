@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon Velocity 3D - Arcade Studio</title>
+    <title>Neon Velocity 3D</title>
     <style>
-        /* Estilos integrados para evitar erros de carregamento */
         body { margin: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
-        canvas { display: block; }
+        canvas { display: block; width: 100vw; height: 100vh; }
         
         .ui-overlay {
             position: absolute; top: 0; left: 0; width: 100%; padding: 20px;
@@ -15,13 +14,11 @@
             box-sizing: border-box; pointer-events: none; z-index: 10;
         }
 
-        /* O BOTÃO DE VOLTAR COM O LINK CORRIGIDO */
         .btn-back {
             pointer-events: auto; background: #ff0000; color: white;
             text-decoration: none; padding: 10px 20px; border-radius: 5px; 
             font-weight: bold; transition: 0.3s;
         }
-        .btn-back:hover { background: #cc0000; transform: scale(1.05); }
 
         #score-container {
             color: #0ff; font-size: 24px; font-weight: bold;
@@ -33,7 +30,7 @@
             display: none; position: absolute; top: 50%; left: 50%; 
             transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); 
             padding: 40px; border: 3px solid #ff0000; text-align: center; 
-            color: white; z-index: 100; border-radius: 15px; box-shadow: 0 0 20px #ff0000;
+            color: white; z-index: 100; border-radius: 15px;
         }
 
         .btn-restart {
@@ -51,6 +48,118 @@
 
     <div id="game-over-screen">
         <h1 style="color: #ff0000; margin: 0;">FIM DE JOGO</h1>
-        <p style="font-size: 20px;">Pontuação Final: <span id="final-score">0</span></p>
+        <p>Pontuação Final: <span id="final-score">0</span></p>
         <button class="btn-restart" onclick="location.reload()">TENTAR NOVAMENTE</button>
     </div>
+
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // 1. Inicialização
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. Luzes (Importante para ver objetos)
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(0, 5, 5).underline;
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0x404040));
+
+        // 3. Jogador (Cubo Neon)
+        const player = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 1, 1),
+            new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00ffff, wireframe: true })
+        );
+        scene.add(player);
+
+        // 4. Chão (Grade)
+        const grid = new THREE.GridHelper(200, 40, 0xff00ff, 0x444444);
+        grid.position.y = -1;
+        scene.add(grid);
+
+        // 5. Estrelas de Fundo (Melhoria Visual)
+        const starGeo = new THREE.BufferGeometry();
+        const starCoords = [];
+        for(let i=0; i<500; i++) {
+            starCoords.push((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100);
+        }
+        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starCoords, 3));
+        const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({color: 0xffffff}));
+        scene.add(stars);
+
+        camera.position.set(0, 2, 5);
+        camera.lookAt(player.position);
+
+        let moveLeft = false, moveRight = false, isGameOver = false, score = 0;
+        let gameSpeed = 0.25;
+        const obstacles = [];
+
+        function createObstacle() {
+            if (isGameOver) return;
+            const obs = new THREE.Mesh(
+                new THREE.BoxGeometry(0.8, 0.8, 0.8),
+                new THREE.MeshStandardMaterial({ color: 0xff0000 })
+            );
+            obs.position.z = -40;
+            obs.position.x = (Math.random() - 0.5) * 10;
+            scene.add(obs);
+            obstacles.push(obs);
+        }
+        setInterval(createObstacle, 1500);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "ArrowLeft") moveLeft = true;
+            if (e.key === "ArrowRight") moveRight = true;
+        });
+        document.addEventListener('keyup', (e) => {
+            if (e.key === "ArrowLeft") moveLeft = false;
+            if (e.key === "ArrowRight") moveRight = false;
+        });
+
+        function animate() {
+            if (isGameOver) return;
+            requestAnimationFrame(animate);
+
+            if (moveLeft && player.position.x > -5) player.position.x -= 0.15;
+            if (moveRight && player.position.x < 5) player.position.x += 0.15;
+
+            grid.position.z += gameSpeed;
+            if (grid.position.z > 5) grid.position.z = 0;
+            stars.rotation.y += 0.001;
+
+            obstacles.forEach((obs, index) => {
+                obs.position.z += gameSpeed;
+                if (Math.abs(obs.position.z - player.position.z) < 0.8 && 
+                    Math.abs(obs.position.x - player.position.x) < 0.8) {
+                    isGameOver = true;
+                    document.getElementById('final-score').innerText = score;
+                    document.getElementById('game-over-screen').style.display = 'block';
+                }
+                if (obs.position.z > 5) {
+                    scene.remove(obs);
+                    obstacles.splice(index, 1);
+                    score += 10;
+                    document.getElementById('score').innerText = score;
+                    if (score % 100 === 0) gameSpeed += 0.05;
+                }
+            });
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
