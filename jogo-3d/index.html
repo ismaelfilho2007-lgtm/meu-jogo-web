@@ -52,39 +52,38 @@
         <button class="btn-restart" onclick="location.reload()">TENTAR NOVAMENTE</button>
     </div>
 
-    <script type="importmap">
-        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
-    </script>
-
     <script type="module">
-        import * as THREE from 'three';
+        import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
-        // 1. Inicialização
+        // 1. Inicialização Forçada
         const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000); // Força o fundo preto
+
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        // 2. Luzes
-        const light = new THREE.DirectionalLight(0xffffff, 1);
-        light.position.set(0, 5, 5);
-        scene.add(light);
-        scene.add(new THREE.AmbientLight(0x404040));
+        // 2. Luzes (Simples para garantir performance)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(0, 5, 5);
+        scene.add(dirLight);
 
-        // 3. Jogador (Cubo Neon)
+        // 3. Jogador
         const player = new THREE.Mesh(
             new THREE.BoxGeometry(1, 1, 1),
             new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00ffff, wireframe: true })
         );
         scene.add(player);
 
-        // 4. Chão (Grade)
+        // 4. Chão
         const grid = new THREE.GridHelper(200, 40, 0xff00ff, 0x444444);
         grid.position.y = -1;
         scene.add(grid);
 
-        // Configuração da Câmera
         camera.position.set(0, 2, 5);
         camera.lookAt(player.position);
 
@@ -105,12 +104,12 @@
         }
         setInterval(createObstacle, 1500);
 
-        // Controles de teclado
-        document.addEventListener('keydown', (e) => {
+        // Controles
+        window.addEventListener('keydown', (e) => {
             if (e.key === "ArrowLeft") moveLeft = true;
             if (e.key === "ArrowRight") moveRight = true;
         });
-        document.addEventListener('keyup', (e) => {
+        window.addEventListener('keyup', (e) => {
             if (e.key === "ArrowLeft") moveLeft = false;
             if (e.key === "ArrowRight") moveRight = false;
         });
@@ -119,45 +118,13 @@
             if (isGameOver) return;
             requestAnimationFrame(animate);
 
-            // Movimentação do Jogador
             if (moveLeft && player.position.x > -5) player.position.x -= 0.15;
             if (moveRight && player.position.x < 5) player.position.x += 0.15;
 
-            // Movimento da grade infinita
             grid.position.z += gameSpeed;
             if (grid.position.z > 5) grid.position.z = 0;
 
-            // Lógica dos obstáculos
             obstacles.forEach((obs, index) => {
                 obs.position.z += gameSpeed;
-
-                // Colisão
                 if (Math.abs(obs.position.z - player.position.z) < 0.8 && 
-                    Math.abs(obs.position.x - player.position.x) < 0.8) {
-                    isGameOver = true;
-                    document.getElementById('final-score').innerText = score;
-                    document.getElementById('game-over-screen').style.display = 'block';
-                }
-
-                // Limpeza e pontuação
-                if (obs.position.z > 5) {
-                    scene.remove(obs);
-                    obstacles.splice(index, 1);
-                    score += 10;
-                    document.getElementById('score').innerText = score;
-                    if (score % 100 === 0) gameSpeed += 0.05;
-                }
-            });
-            renderer.render(scene, camera);
-        }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        animate();
-    </script>
-</body>
-</html>
+                    Math.abs(obs.
