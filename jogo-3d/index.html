@@ -6,7 +6,7 @@
     <title>Neon Velocity 3D</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        body { margin: 0; background: #001122; overflow: hidden; font-family: sans-serif; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
         canvas { display: block; }
         .ui { position: absolute; top: 0; left: 0; width: 100%; padding: 20px; display: flex; justify-content: space-between; box-sizing: border-box; z-index: 10; color: #0ff; pointer-events: none; }
         .btn-back { pointer-events: auto; background: #ff0000; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; }
@@ -28,28 +28,25 @@
     </div>
 
     <script>
-        // Forçar execução imediata
         const init = () => {
             const scene = new THREE.Scene();
-            // Mudando o fundo para azul escuro para confirmar que o renderizador abriu
-            scene.background = new THREE.Color(0x001122); 
+            scene.background = new THREE.Color(0x000000); 
 
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ antialias: false }); // Antialias desligado para máxima compatibilidade
+            const renderer = new THREE.WebGLRenderer({ antialias: false });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            // Luz básica (Ambiental não depende de posição)
             const light = new THREE.AmbientLight(0xffffff, 1); 
             scene.add(light);
 
-            // Player (Usando MeshBasicMaterial que NÃO precisa de luz para aparecer)
+            // Player
             const playerGeo = new THREE.BoxGeometry(1, 1, 1);
             const playerMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true });
             const player = new THREE.Mesh(playerGeo, playerMat);
             scene.add(player);
 
-            // Grade (Chão)
+            // Grade
             const grid = new THREE.GridHelper(200, 40, 0xff00ff, 0x444444);
             grid.position.y = -1;
             scene.add(grid);
@@ -57,10 +54,22 @@
             camera.position.set(0, 2, 5);
             camera.lookAt(0, 0, 0);
 
-            let score = 0;
-            let speed = 0.2;
-            let isGameOver = false;
+            let score = 0, speed = 0.2, isGameOver = false;
             const obstacles = [];
+            const particles = []; // Array para a fumaça
+
+            // Função para criar fumaça
+            function createSmoke() {
+                if(isGameOver) return;
+                const smokeGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+                const smokeMat = new THREE.MeshBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.6 });
+                const smoke = new THREE.Mesh(smokeGeo, smokeMat);
+                
+                // Nasce atrás do player
+                smoke.position.set(player.position.x, player.position.y - 0.2, player.position.z + 0.5);
+                scene.add(smoke);
+                particles.push(smoke);
+            }
 
             function spawn() {
                 if(isGameOver) return;
@@ -91,26 +100,40 @@
                 if(moveLeft && player.position.x > -5) player.position.x -= 0.15;
                 if(moveRight && player.position.x < 5) player.position.x += 0.15;
 
+                // Gerar fumaça constantemente
+                if(Math.random() > 0.5) createSmoke();
+
                 grid.position.z += speed;
                 if(grid.position.z > 5) grid.position.z = 0;
 
+                // Animar Fumaça
+                for(let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.position.z += speed * 0.5; // Fumaça fica para trás
+                    p.scale.multiplyScalar(0.95); // Diminui de tamanho
+                    p.material.opacity -= 0.02;   // Fica transparente
+                    
+                    if(p.scale.x < 0.01) {
+                        scene.remove(p);
+                        particles.splice(i, 1);
+                    }
+                }
+
+                // Obstáculos
                 for(let i = obstacles.length - 1; i >= 0; i--) {
                     const o = obstacles[i];
                     o.position.z += speed;
-
-                    // Colisão simples
-                    if(Math.abs(o.position.z - player.position.z) < 0.8 && 
-                       Math.abs(o.position.x - player.position.x) < 0.8) {
+                    if(Math.abs(o.position.z - player.position.z) < 0.8 && Math.abs(o.position.x - player.position.x) < 0.8) {
                         isGameOver = true;
                         document.getElementById('final-score').innerText = score;
                         document.getElementById('game-over').style.display = 'block';
                     }
-
                     if(o.position.z > 5) {
                         scene.remove(o);
                         obstacles.splice(i, 1);
                         score += 10;
                         document.getElementById('score').innerText = score;
+                        if(score % 100 === 0) speed += 0.05;
                     }
                 }
                 renderer.render(scene, camera);
@@ -118,15 +141,9 @@
             update();
         };
 
-        // Tentar rodar o init
-        if (window.THREE) {
-            init();
-        } else {
-            // Se falhar, tenta de novo em 1 segundo
-            setTimeout(() => location.reload(), 1000);
-        }
-
-        window.addEventListener('resize', () => location.reload()); // Simplificado para evitar erros de câmera
+        if (window.THREE) init();
+        else setTimeout(() => location.reload(), 1000);
+        window.addEventListener('resize', () => location.reload());
     </script>
 </body>
 </html>
