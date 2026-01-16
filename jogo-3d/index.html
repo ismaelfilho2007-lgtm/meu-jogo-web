@@ -118,3 +118,46 @@
         function animate() {
             if (isGameOver) return;
             requestAnimationFrame(animate);
+
+            // Movimentação do Jogador
+            if (moveLeft && player.position.x > -5) player.position.x -= 0.15;
+            if (moveRight && player.position.x < 5) player.position.x += 0.15;
+
+            // Movimento da grade infinita
+            grid.position.z += gameSpeed;
+            if (grid.position.z > 5) grid.position.z = 0;
+
+            // Lógica dos obstáculos
+            obstacles.forEach((obs, index) => {
+                obs.position.z += gameSpeed;
+
+                // Colisão
+                if (Math.abs(obs.position.z - player.position.z) < 0.8 && 
+                    Math.abs(obs.position.x - player.position.x) < 0.8) {
+                    isGameOver = true;
+                    document.getElementById('final-score').innerText = score;
+                    document.getElementById('game-over-screen').style.display = 'block';
+                }
+
+                // Limpeza e pontuação
+                if (obs.position.z > 5) {
+                    scene.remove(obs);
+                    obstacles.splice(index, 1);
+                    score += 10;
+                    document.getElementById('score').innerText = score;
+                    if (score % 100 === 0) gameSpeed += 0.05;
+                }
+            });
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
