@@ -66,9 +66,9 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // 2. Luzes (Importante para ver objetos)
+        // 2. Luzes
         const light = new THREE.DirectionalLight(0xffffff, 1);
-        light.position.set(0, 5, 5).underline;
+        light.position.set(0, 5, 5);
         scene.add(light);
         scene.add(new THREE.AmbientLight(0x404040));
 
@@ -84,16 +84,7 @@
         grid.position.y = -1;
         scene.add(grid);
 
-        // 5. Estrelas de Fundo (Melhoria Visual)
-        const starGeo = new THREE.BufferGeometry();
-        const starCoords = [];
-        for(let i=0; i<500; i++) {
-            starCoords.push((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100);
-        }
-        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starCoords, 3));
-        const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({color: 0xffffff}));
-        scene.add(stars);
-
+        // Configuração da Câmera
         camera.position.set(0, 2, 5);
         camera.lookAt(player.position);
 
@@ -114,6 +105,7 @@
         }
         setInterval(createObstacle, 1500);
 
+        // Controles de teclado
         document.addEventListener('keydown', (e) => {
             if (e.key === "ArrowLeft") moveLeft = true;
             if (e.key === "ArrowRight") moveRight = true;
@@ -126,40 +118,3 @@
         function animate() {
             if (isGameOver) return;
             requestAnimationFrame(animate);
-
-            if (moveLeft && player.position.x > -5) player.position.x -= 0.15;
-            if (moveRight && player.position.x < 5) player.position.x += 0.15;
-
-            grid.position.z += gameSpeed;
-            if (grid.position.z > 5) grid.position.z = 0;
-            stars.rotation.y += 0.001;
-
-            obstacles.forEach((obs, index) => {
-                obs.position.z += gameSpeed;
-                if (Math.abs(obs.position.z - player.position.z) < 0.8 && 
-                    Math.abs(obs.position.x - player.position.x) < 0.8) {
-                    isGameOver = true;
-                    document.getElementById('final-score').innerText = score;
-                    document.getElementById('game-over-screen').style.display = 'block';
-                }
-                if (obs.position.z > 5) {
-                    scene.remove(obs);
-                    obstacles.splice(index, 1);
-                    score += 10;
-                    document.getElementById('score').innerText = score;
-                    if (score % 100 === 0) gameSpeed += 0.05;
-                }
-            });
-            renderer.render(scene, camera);
-        }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        animate();
-    </script>
-</body>
-</html>
